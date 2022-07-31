@@ -1,9 +1,14 @@
-from flask import Blueprint, jsonify, request
+"""
+Blueprint for GET, PUT, POST and DELETE for users table
+"""
 
-import db
+import sqlalchemy
+from flask import Blueprint, jsonify, request, abort
+
+from db import db
 from models import User
 
-users_blueprint = Blueprint('users_blueprint', __name__) # , template_folder='templates')
+users_blueprint = Blueprint('users_blueprint', __name__)
 
 
 def user_to_dict(user):
@@ -32,13 +37,19 @@ def get_all_users():
 
 @users_blueprint.route('/users/<int:uid>', methods=['GET'])
 def get_one_user(uid):
+    """
+    get one user. Returns an empty dict if uid is not found
+    """
     user = User.query.get(uid)
-    return jsonify(user_to_dict(user))
+    if user:
+        return jsonify(user_to_dict(user))
+    return {}
 
 
 @users_blueprint.route('/users', methods=['POST'])
-def create_user(user: User):
+def create_user():
     data = request.json
+    # print(data)
     user = User(
         first_name=data.get('first_name'),
         last_name=data.get('last_name'),
@@ -57,21 +68,32 @@ def update_user(uid):
     data = request.json
 
     user = User.query.get(uid)
-    user.first_name = data.get('first_name')
-    user.last_name = data.get('last_name')
-    user.age = data.get('age')
-    user.email = data.get('email')
-    user.role = data.get('role')
-    user.phone = data.get('phone')
+    try:
+        user.first_name = data.get('first_name')
+        user.last_name = data.get('last_name')
+        user.age = data.get('age')
+        user.email = data.get('email')
+        user.role = data.get('role')
+        user.phone = data.get('phone')
+    except AttributeError:
+        abort(500, "Attribute error (id not present?)")
 
-    db.session.commit()
+    try:
+        db.session.commit()
+    except sqlalchemy.exc.IntegrityError:
+        abort(500, 'Integrity error (unique key not unique?)')
+
     return jsonify(user_to_dict(user))
 
 
 @users_blueprint.route('/users/<int:uid>', methods=['DELETE'])
 def delete_user(uid):
     user = User.query.get(uid)
-    db.session.delete(user)
+    try:
+        db.session.delete(user)
+    except sqlalchemy.orm.exc.UnmappedInstanceError:
+        abort(500, 'Unmapped Instance Error (id not present?)')
+
     db.session.commit()
-    return jsonify('')
+    return jsonify('deleted')
 

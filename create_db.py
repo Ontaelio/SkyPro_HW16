@@ -1,9 +1,15 @@
+"""
+A script to create DB from a JSON fixture in raw_data folder
+Should be run once.
+"""
+
+
 import json
 
 import sqlalchemy
 
 from models import User, Offer, Order
-from app import app
+from blueprints.orders_view import date_to_str, str_to_date
 from db import db
 
 
@@ -78,20 +84,20 @@ def create_db():
     # db.session.commit()
 
     for order in orders:
-        db.session.add(Order(**order))
+        # db.session.add(Order(**order))
 
-        # val = Order(
-        #         id=order['id'],
-        #         name=order['name'],
-        #         description=order['description'],
-        #         start_date=order['start_date'],
-        #         end_date=order['end_date'],
-        #         address=order['address'],
-        #         price=order['price'],
-        #         customer_id=order['customer_id'],
-        #         executor_id=order['executor_id'],
-        # )
-        # db.session.add(val)
+        val = Order(
+                id=order['id'],
+                name=order['name'],
+                description=order['description'],
+                start_date=str_to_date(order['start_date']),
+                end_date=str_to_date(order['end_date']),
+                address=order['address'],
+                price=order['price'],
+                customer_id=order['customer_id'],
+                executor_id=order['executor_id'],
+        )
+        db.session.add(val)
     # db.session.commit()
 
     for offer in offers:
